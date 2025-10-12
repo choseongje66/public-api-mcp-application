@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import MessageList from "./components/MessageList";
 import ChatInput from "./components/ChatInput";
+import AuthForm from "./components/AuthForm";
+import { getToken, clearToken } from "./lib/auth";
 import {
   listConversations,
   createConversation,
@@ -18,13 +20,14 @@ type Msg = {
 type ConvItem = { id: number; title: string | null; createdAt: string };
 
 export default function App() {
+  const [authed, setAuthed] = useState<boolean>(!!getToken());
   const [convs, setConvs] = useState<ConvItem[]>([]);
   const [activeId, setActiveId] = useState<number>();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 초기: 대화 목록 준비 (없으면 하나 생성)
   useEffect(() => {
+    if (!authed) return;
     (async () => {
       const { items } = await listConversations();
       if (items.length === 0) {
@@ -37,24 +40,18 @@ export default function App() {
         setActiveId(items[0].id);
       }
     })();
-  }, []);
+  }, [authed]);
 
-  // 활성 대화 변경 시 메시지 로드
   useEffect(() => {
-    if (!activeId) return;
+    if (!authed || !activeId) return;
     (async () => {
       const { items } = await fetchMessages(activeId);
       setMessages(items as any);
     })();
-  }, [activeId]);
-
-  const activeConv = useMemo(
-    () => convs.find((c) => c.id === activeId),
-    [convs, activeId]
-  );
+  }, [authed, activeId]);
 
   async function onSend(text: string) {
-    if (!activeId || loading) return;
+    if (!authed || !activeId || loading) return;
     setLoading(true);
     try {
       await sendQuery(activeId, text);
@@ -94,6 +91,18 @@ export default function App() {
     }
   }
 
+  function onLogout() {
+    clearToken();
+    setAuthed(false);
+    setConvs([]);
+    setMessages([]);
+    setActiveId(undefined);
+  }
+
+  if (!authed) {
+    return <AuthForm onAuthed={() => setAuthed(true)} />;
+  }
+
   return (
     <div style={{ display: "flex", height: "100vh", background: "#fafafa" }}>
       <Sidebar
@@ -118,9 +127,21 @@ export default function App() {
             alignItems: "center",
             padding: "0 16px",
             background: "#fff",
+            justifyContent: "space-between",
           }}
         >
           <div style={{ fontWeight: 600 }}>공공 api mcp</div>
+          <button
+            onClick={onLogout}
+            style={{
+              padding: "6px 10px",
+              border: "1px solid #e5e7eb",
+              borderRadius: 6,
+              background: "#fff",
+            }}
+          >
+            로그아웃
+          </button>
         </div>
         <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
           {messages.length ? (

@@ -11,20 +11,21 @@ import {
   listMessages,
 } from "../services/conversation.service";
 
-export async function getConversations(_req: Request, res: Response) {
-  // 로그인 도입 전까지 데모 유저 사용
-  const user = await ensureDemoUser();
-  const items = await listConversations(user.id);
+export async function getConversations(req: Request, res: Response) {
+  // @ts-ignore
+  const userId = req.user!.id;
+  const items = await listConversations(userId);
   res.json({ items });
 }
-
+// 생성
 export async function postConversation(req: Request, res: Response) {
   const { title } = CreateConversationSchema.parse(req.body ?? {});
-  const user = await ensureDemoUser(); // 추후 req.user!.id 로 교체
-  const conv = await createConversation(user.id, title ?? null);
+  // @ts-ignore
+  const userId = req.user!.id;
+  const conv = await createConversation(userId, title ?? null);
   res.json(conv);
 }
-
+// 삭제
 export async function removeConversation(req: Request, res: Response) {
   const { id } = ConvIdParamSchema.parse(req.params);
   await deleteConversation(id);

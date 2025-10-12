@@ -1,41 +1,59 @@
+// src/lib/api.ts
+import { authFetch } from "./auth";
+
 const BASE = "http://localhost:7070";
 
-// 대화 목록
-export async function listConversations() {
-  const r = await fetch(`${BASE}/conversations`);
-  return r.json(); // { items: [{id,title,createdAt}, ...] }
+// --- Auth ---
+export async function register(email: string, password: string) {
+  const r = await fetch(`${BASE}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  return r.json();
 }
 
-// 대화 생성
+export async function login(email: string, password: string) {
+  const r = await fetch(`${BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  return r.json(); // { ok, token, user }
+}
+
+// --- Conversations & Chat (인증 필요) ---
+export async function listConversations() {
+  const r = await authFetch(`${BASE}/conversations`);
+  return r.json();
+}
+
 export async function createConversation(title?: string) {
-  const r = await fetch(`${BASE}/conversations`, {
+  const r = await authFetch(`${BASE}/conversations`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
   });
-  return r.json(); // { id, title, createdAt, ... }
+  return r.json();
 }
 
-// 대화 삭제
 export async function deleteConversation(convId: number) {
-  const r = await fetch(`${BASE}/conversations/${convId}`, {
+  const r = await authFetch(`${BASE}/conversations/${convId}`, {
     method: "DELETE",
   });
   return r.json();
 }
 
-// 메시지 조회
 export async function fetchMessages(convId: number) {
-  const r = await fetch(`${BASE}/conversations/${convId}/messages`);
-  return r.json(); // { items: [{id,role,content,createdAt}, ...] }
+  const r = await authFetch(`${BASE}/conversations/${convId}/messages`);
+  return r.json();
 }
 
-// 메시지 전송 (DB 저장)
 export async function sendQuery(convId: number, text: string) {
-  const r = await fetch(`${BASE}/chat/query`, {
+  const r = await authFetch(`${BASE}/chat/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ convId, text }),
   });
-  return r.json(); // { messages: [...] }
+  return r.json();
 }

@@ -1,34 +1,56 @@
 import { Router } from "express";
-import { LoginSchema } from "../schemas/auth.schema";
+import { z } from "zod";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../db/prisma";
 
 const r = Router();
 
-// 간단 로그인(stub): 이메일/패스워드로 사용자 조회 or 생성 후 JWT 발급
+const LoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(4),
+});
+
+r.post("/register", async (req, res) => {
+  const { email, password } = LoginSchema.parse(req.body ?? {});
+  const exists = await prisma.user.findUnique({ where: { email } });
+  if (exists)
+    return res
+      .status(409)
+      .json({ ok: false, error: "Email already registered" });
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = await prisma.user.create({
+    data: { email, passwordHash, displayName: email.split("@")[0] },
+  });
+  res.json({
+    ok: true,
+    user: { id: user.id, email: user.email, displayName: user.displayName },
+  });
+});
+
 r.post("/login", async (req, res) => {
   const { email, password } = LoginSchema.parse(req.body ?? {});
-  // TODO: 비밀번호 해싱/검증(bcrypt) - 지금은 데모용으로 생략
-  let user = await prisma.user.findFirst({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { email } });
   if (!user)
-    user = await prisma.user.create({
-      data: { email, displayName: email.split("@")[0] },
-    });
+    return res.status(401).json({ ok: false, error: "Invalid credentials" });
+
+  const ok = await bcrypt.compare(password, user.passwordHash);
+  if (!ok)
+    return res.status(401).json({ ok: false, error: "Invalid credentials" });
 
   const secret = process.env.JWT_SECRET || "devsecret";
-  const token = jwt.sign(
-    { id: user.id, email: user.email ?? undefined },
-    secret,
-    { expiresIn: "7d" }
-  );
+  const token = jwt.sign({ id: user.id, email: user.email }, secret, {
+    expiresIn: "7d",
+  });
   res.json({
+    ok: true,
     token,
     user: { id: user.id, email: user.email, displayName: user.displayName },
   });
 });
 
 r.get("/me", (req, res) => {
-  // authOptional 미들웨어로 req.user가 있으면 반환
   // @ts-ignore
   const u = req.user;
   if (!u) return res.status(401).json({ ok: false });
