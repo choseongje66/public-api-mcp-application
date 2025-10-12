@@ -1,69 +1,49 @@
-# React + TypeScript + Vite
+# Frontend (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+이 디렉터리는 MCP 기반 공공데이터 채팅형 웹 클라이언트를 제공합니다.
 
-Currently, two official plugins are available:
+## 실행 방법
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+기본 포트: http://localhost:5173
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 폴더 구조
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├─ App.tsx
+├─ components/
+│  ├─ Sidebar.tsx
+│  ├─ MessageList.tsx
+│  └─ ChatInput.tsx
+└─ lib/
+   └─ api.ts
+```
+
+## 주요 기능
+
+- 대화 목록 표시 및 삭제
+- 메시지 전송 / 응답 표시
+- 대화 제목 자동 생성
+
+## API 연동
+
+기본 백엔드 주소: http://localhost:7070
+
+| 기능         | 엔드포인트                    | 메서드 |
+| ------------ | ----------------------------- | ------ |
+| 대화 목록    | `/conversations`              | GET    |
+| 새 대화 생성 | `/conversations`              | POST   |
+| 대화 삭제    | `/conversations/:id`          | DELETE |
+| 메시지 조회  | `/conversations/:id/messages` | GET    |
+| 메시지 전송  | `/chat/query`                 | POST   |
+
+## 향후 개선 예정
+
+- 로그인 UI 및 토큰 저장
+- LLM 응답 하이라이팅
+- MCP 호출 결과 시각화

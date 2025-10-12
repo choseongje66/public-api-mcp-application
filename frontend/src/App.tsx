@@ -2,131 +2,142 @@ import { useEffect, useMemo, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import MessageList from "./components/MessageList";
 import ChatInput from "./components/ChatInput";
-import { sendQuery } from "./lib/api";
-import type { Conversation, Msg } from "./lib/storage";
 import {
-    loadConversations,
-    createConversation,
-    updateConversation,
-    deleteConversation,
-    getConversation,
-    renameConversation,
-} from "./lib/storage";
+  listConversations,
+  createConversation,
+  deleteConversation as delConv,
+  fetchMessages,
+  sendQuery,
+} from "./lib/api";
+
+type Msg = {
+  id: number;
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+};
+type ConvItem = { id: number; title: string | null; createdAt: string };
 
 export default function App() {
-    const [convs, setConvs] = useState<Conversation[]>([]);
-    const [activeId, setActiveId] = useState<string>();
-    const [loading, setLoading] = useState(false);
+  const [convs, setConvs] = useState<ConvItem[]>([]);
+  const [activeId, setActiveId] = useState<number>();
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [loading, setLoading] = useState(false);
 
-    // 초기 로드
-    useEffect(() => {
-        const list = loadConversations();
-        if (list.length === 0) {
-            const c = createConversation("새 대화");
-            setConvs(loadConversations());
-            setActiveId(c.id);
-        } else {
-            setConvs(list);
-            setActiveId(list[0].id);
-        }
-    }, []);
-
-    const activeConv = useMemo(() => convs.find((c) => c.id === activeId), [convs, activeId]);
-
-    async function onSend(text: string) {
-        if (!activeConv || loading) return;
-        setLoading(true);
-        try {
-            // 1) 사용자 메시지 반영
-            const userMsg: Msg = { role: "user", content: text };
-            const updated: Conversation = {
-                ...activeConv,
-                messages: [...activeConv.messages, userMsg],
-                updatedAt: Date.now(),
-            };
-            updateConversation(updated);
-            setConvs((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-
-            // 2) 서버 호출 (더미 응답)
-            const res = await sendQuery(text);
-            const asst = res?.messages?.find((x: any) => x.role === "assistant");
-            if (asst) {
-                const withAsst: Conversation = {
-                    ...updated,
-                    messages: [...updated.messages, { role: "assistant", content: asst.content }],
-                    updatedAt: Date.now(),
-                };
-                // 첫 질문이면 제목 자동 생성(사용자 입력 앞부분)
-                if (withAsst.messages.length === 2 && (!withAsst.title || withAsst.title === "새 대화")) {
-                    const autoTitle = text.slice(0, 30);
-                    renameConversation(withAsst.id, autoTitle);
-                    setConvs(loadConversations());
-                } else {
-                    updateConversation(withAsst);
-                    setConvs((prev) => prev.map((c) => (c.id === withAsst.id ? withAsst : c)));
-                }
-            }
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    function onNew() {
-        const c = createConversation("새 대화");
-        setConvs(loadConversations());
+  // 초기: 대화 목록 준비 (없으면 하나 생성)
+  useEffect(() => {
+    (async () => {
+      const { items } = await listConversations();
+      if (items.length === 0) {
+        const c = await createConversation("새 대화");
+        const { items: again } = await listConversations();
+        setConvs(again);
         setActiveId(c.id);
+      } else {
+        setConvs(items);
+        setActiveId(items[0].id);
+      }
+    })();
+  }, []);
+
+  // 활성 대화 변경 시 메시지 로드
+  useEffect(() => {
+    if (!activeId) return;
+    (async () => {
+      const { items } = await fetchMessages(activeId);
+      setMessages(items as any);
+    })();
+  }, [activeId]);
+
+  const activeConv = useMemo(
+    () => convs.find((c) => c.id === activeId),
+    [convs, activeId]
+  );
+
+  async function onSend(text: string) {
+    if (!activeId || loading) return;
+    setLoading(true);
+    try {
+      await sendQuery(activeId, text);
+      const [{ items: msgs }, { items: list }] = await Promise.all([
+        fetchMessages(activeId),
+        listConversations(),
+      ]);
+      setMessages(msgs as any);
+      setConvs(list);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    function onSelect(id: string) {
-        setActiveId(id);
+  async function onNew() {
+    const c = await createConversation("새 대화");
+    const { items } = await listConversations();
+    setConvs(items);
+    setActiveId(c.id);
+    setMessages([]);
+  }
+
+  async function onDelete(id: string | number) {
+    await delConv(Number(id));
+    const { items } = await listConversations();
+    setConvs(items);
+    if (items.length) {
+      setActiveId(items[0].id);
+      const { items: msgs } = await fetchMessages(items[0].id);
+      setMessages(msgs as any);
+    } else {
+      const c = await createConversation("새 대화");
+      const { items: again } = await listConversations();
+      setConvs(again);
+      setActiveId(c.id);
+      setMessages([]);
     }
+  }
 
-    function onDelete(id: string) {
-        deleteConversation(id);
-        const list = loadConversations();
-        setConvs(list);
-        if (list.length) setActiveId(list[0].id);
-        else {
-            const c = createConversation("새 대화");
-            setConvs(loadConversations());
-            setActiveId(c.id);
-        }
-    }
-
-    return (
-        <div style={{ display: "flex", height: "100vh", background: "#fafafa" }}>
-            <Sidebar items={convs} activeId={activeId} onSelect={onSelect} onNew={onNew} onDelete={onDelete} />
-            <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                {/* 헤더 */}
-                <div
-                    style={{
-                        height: 56,
-                        borderBottom: "1px solid #e5e7eb",
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "0 16px",
-                        background: "#ffffff",
-                    }}
-                >
-                    <div style={{ fontWeight: 600 }}>공공 api mcp</div>
-                </div>
-
-                {/* 채팅 영역 */}
-                <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
-                    {activeConv && activeConv.messages.length > 0 ? (
-                        <MessageList messages={activeConv.messages} />
-                    ) : (
-                        <div style={{ color: "#9ca3af", marginTop: 80, textAlign: "center" }}>
-                            왼쪽에서 대화를 선택하거나, 아래 입력창에 질문을 입력해 시작하세요.
-                        </div>
-                    )}
-                </div>
-
-                {/* 입력 */}
-                <div style={{ padding: "12px 24px", background: "#fff" }}>
-                    <ChatInput onSend={onSend} disabled={loading || !activeConv} />
-                </div>
-            </main>
+  return (
+    <div style={{ display: "flex", height: "100vh", background: "#fafafa" }}>
+      <Sidebar
+        items={convs.map((c) => ({
+          id: String(c.id),
+          title: c.title ?? "제목 없음",
+          createdAt: 0,
+          updatedAt: 0,
+          messages: [],
+        }))}
+        activeId={activeId ? String(activeId) : undefined}
+        onSelect={(id) => setActiveId(Number(id))}
+        onNew={onNew}
+        onDelete={(id) => onDelete(id)}
+      />
+      <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <div
+          style={{
+            height: 56,
+            borderBottom: "1px solid #e5e7eb",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 16px",
+            background: "#fff",
+          }}
+        >
+          <div style={{ fontWeight: 600 }}>공공 api mcp</div>
         </div>
-    );
+        <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
+          {messages.length ? (
+            <MessageList messages={messages as any} />
+          ) : (
+            <div
+              style={{ color: "#9ca3af", marginTop: 80, textAlign: "center" }}
+            >
+              왼쪽에서 대화를 선택하거나, 아래 입력창에 질문을 입력해
+              시작하세요.
+            </div>
+          )}
+        </div>
+        <div style={{ padding: "12px 24px", background: "#fff" }}>
+          <ChatInput onSend={onSend} disabled={loading || !activeId} />
+        </div>
+      </main>
+    </div>
+  );
 }
