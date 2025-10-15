@@ -17,21 +17,27 @@ model User {
 }
 
 model Conversation {
-  id        Int        @id @default(autoincrement())
-  user      User       @relation(fields: [userId], references: [id])
-  userId    Int
-  title     String?
-  messages  Message[]
-  createdAt DateTime   @default(now())
+  id             Int        @id @default(autoincrement())
+  user           User       @relation(fields: [userId], references: [id])
+  userId         Int
+  title          String?
+  mcpSessionUuid String?    @unique   // MCP 서버의 세션 UUID 
+  messages       Message[]
+  createdAt      DateTime   @default(now())
 }
 
 model Message {
   id        Int           @id @default(autoincrement())
-  conv      Conversation   @relation(fields: [convId], references: [id])
+  conv      Conversation  @relation(fields: [convId], references: [id])
   convId    Int
   role      MessageRole
   content   String         @db.MediumText
-  payload   Json?
+
+  //  MCP/Ollama 호환을 위한 optional 필드들
+  images    Json?          // base64 이미지나 URL 리스트
+  toolName  String?        // MCP tool 이름
+  payload   Json?          // 원본 데이터(JSON) 저장
+
   createdAt DateTime       @default(now())
 }
 
