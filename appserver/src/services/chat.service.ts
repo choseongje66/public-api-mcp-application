@@ -1,6 +1,8 @@
+// src/services/chat.service.ts
 import { prisma } from "../db/prisma";
-// import { OllamaAdapter } from "./llm/ollama.adapter"; // 실제 붙일 때 사용
-// import { callMcp } from "./llm/mcp.client";          // 필요 시 사용
+import type { OllamaMessage } from "./llm/convert";
+import { toOllamaMessages } from "./llm/convert";
+import { mcpChat } from "./llm/mcp.client";
 
 export async function saveUserMessage(convId: number, text: string) {
   return prisma.message.create({
@@ -22,4 +24,38 @@ export async function updateTitleIfFirstPair(convId: number, userText: string) {
       data: { title: userText.slice(0, 30) },
     });
   }
+}
+
+/** DB 히스토리 → Ollama 메시지 배열 */
+export async function buildOllamaMessages(
+  convId: number
+): Promise<OllamaMessage[]> {
+  const items = await prisma.message.findMany({
+    where: { convId },
+    orderBy: { id: "asc" },
+    select: { role: true, content: true, payload: true }, // payload 등 확장 가능
+  });
+
+  return toOllamaMessages(
+    items.map((m) => ({
+      role: m.role,
+      content: m.content,
+      images: m.payload?.images ?? null, // payload에 넣었다면 변환
+      toolName: m.payload?.toolName ?? null,
+    }))
+  );
+}
+
+/** 히스토리 + 최신 입력으로 MCP /chat 호출 → 최종 텍스트 */
+export async function askMcpWithHistory(
+  convId: number,
+  userText: string
+): Promise<string> {
+  const history = await buildOllamaMessages(convId);
+  const messages: OllamaMessage[] = [
+    ...history,
+    { role: "user", content: userText },
+  ];
+  const final = await mcpChat(messages);
+  return final;
 }

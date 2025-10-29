@@ -2,12 +2,12 @@
 import type { MessageRole } from "@prisma/client";
 
 /**
- * Ollama/Ollama-호환 Message 포맷 (팀원 MCP 호스트와도 동일 포맷 가정)
+ * Ollama/Ollama-호환 Message 포맷
  */
 export type OllamaMessage = {
   role: "system" | "user" | "assistant" | "tool";
   content: string;
-  images?: string[]; // base64 또는 URL 문자열 배열(권장: 문자열로만 운영)
+  images?: string[]; // base64 또는 URL 문자열 배열
   tool_name?: string; // DB의 toolName과 매핑
 };
 

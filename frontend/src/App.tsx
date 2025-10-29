@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+// src/App.tsx
+import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import MessageList from "./components/MessageList";
 import ChatInput from "./components/ChatInput";
@@ -29,15 +30,25 @@ export default function App() {
   useEffect(() => {
     if (!authed) return;
     (async () => {
-      const { items } = await listConversations();
-      if (items.length === 0) {
-        const c = await createConversation("새 대화");
-        const { items: again } = await listConversations();
-        setConvs(again);
-        setActiveId(c.id);
-      } else {
-        setConvs(items);
-        setActiveId(items[0].id);
+      try {
+        const data = await listConversations();
+        const items: ConvItem[] = Array.isArray(data)
+          ? data
+          : data?.items ?? [];
+        if (items.length === 0) {
+          const c = await createConversation("새 대화");
+          const againData = await listConversations();
+          const again = Array.isArray(againData)
+            ? againData
+            : againData?.items ?? [];
+          setConvs(again);
+          setActiveId(c.id);
+        } else {
+          setConvs(items);
+          setActiveId(items[0].id);
+        }
+      } catch (e) {
+        console.error(e);
       }
     })();
   }, [authed]);
@@ -45,8 +56,13 @@ export default function App() {
   useEffect(() => {
     if (!authed || !activeId) return;
     (async () => {
-      const { items } = await fetchMessages(activeId);
-      setMessages(items as any);
+      try {
+        const data = await fetchMessages(activeId);
+        const items: Msg[] = Array.isArray(data) ? data : data?.items ?? [];
+        setMessages(items);
+      } catch (e) {
+        console.error(e);
+      }
     })();
   }, [authed, activeId]);
 
@@ -55,39 +71,57 @@ export default function App() {
     setLoading(true);
     try {
       await sendQuery(activeId, text);
-      const [{ items: msgs }, { items: list }] = await Promise.all([
+      const [hist, list] = await Promise.all([
         fetchMessages(activeId),
         listConversations(),
       ]);
-      setMessages(msgs as any);
-      setConvs(list);
+      const msgs: Msg[] = Array.isArray(hist) ? hist : hist?.items ?? [];
+      const items: ConvItem[] = Array.isArray(list) ? list : list?.items ?? [];
+      setMessages(msgs);
+      setConvs(items);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
   }
 
   async function onNew() {
-    const c = await createConversation("새 대화");
-    const { items } = await listConversations();
-    setConvs(items);
-    setActiveId(c.id);
-    setMessages([]);
+    try {
+      const c = await createConversation("새 대화");
+      const data = await listConversations();
+      const items: ConvItem[] = Array.isArray(data) ? data : data?.items ?? [];
+      setConvs(items);
+      setActiveId(c.id);
+      setMessages([]);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   async function onDelete(id: string | number) {
-    await delConv(Number(id));
-    const { items } = await listConversations();
-    setConvs(items);
-    if (items.length) {
-      setActiveId(items[0].id);
-      const { items: msgs } = await fetchMessages(items[0].id);
-      setMessages(msgs as any);
-    } else {
-      const c = await createConversation("새 대화");
-      const { items: again } = await listConversations();
-      setConvs(again);
-      setActiveId(c.id);
-      setMessages([]);
+    try {
+      await delConv(Number(id));
+      const data = await listConversations();
+      const items: ConvItem[] = Array.isArray(data) ? data : data?.items ?? [];
+      setConvs(items);
+      if (items.length) {
+        setActiveId(items[0].id);
+        const hist = await fetchMessages(items[0].id);
+        const msgs: Msg[] = Array.isArray(hist) ? hist : hist?.items ?? [];
+        setMessages(msgs);
+      } else {
+        const c = await createConversation("새 대화");
+        const againData = await listConversations();
+        const again = Array.isArray(againData)
+          ? againData
+          : againData?.items ?? [];
+        setConvs(again);
+        setActiveId(c.id);
+        setMessages([]);
+      }
+    } catch (e) {
+      console.error(e);
     }
   }
 
