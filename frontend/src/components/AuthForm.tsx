@@ -20,20 +20,34 @@ export default function AuthForm({ onAuthed }: Props) {
     setLoading(true);
     try {
       if (mode === "register") {
-        const resp = await register(email, pw);
-        if (resp?.ok !== true) {
-          setErr(resp?.error || "회원가입 실패");
+        // 1) 회원가입 시도
+        await register(email, pw);
+        // 일부 서버는 {ok:true}, 일부는 {user:{...}} 반환 → 에러 없으면 성공으로 간주
+      }
+
+      // 2) 로그인 시도
+      const r = await login(email, pw);
+      // 다양한 백엔드 응답 포맷 대비: accessToken / token / jwt 등
+      const token =
+        r?.accessToken ||
+        r?.token ||
+        r?.jwt ||
+        (r?.data?.accessToken ?? r?.data?.token) ||
+        "";
+
+      if (!token) {
+        if (r?.ok && typeof r?.token === "string") {
+          setToken(r.token);
+          onAuthed();
           return;
         }
-        // 회원가입 후 자동 로그인 유도
+        throw new Error(r?.error || "로그인 실패(토큰 없음)");
       }
-      const r = await login(email, pw);
-      if (!r?.ok || !r?.token) {
-        setErr(r?.error || "로그인 실패");
-        return;
-      }
-      setToken(r.token);
+
+      setToken(token);
       onAuthed();
+    } catch (e: any) {
+      setErr(e?.message || "처리에 실패했습니다");
     } finally {
       setLoading(false);
     }
