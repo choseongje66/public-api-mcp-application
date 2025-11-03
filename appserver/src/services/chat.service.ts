@@ -47,15 +47,14 @@ export async function buildOllamaMessages(
 }
 
 /** 히스토리 + 최신 입력으로 MCP /chat 호출 → 최종 텍스트 */
-export async function askMcpWithHistory(
+export async function* askMcpWithHistory(
   convId: number,
   userText: string
-): Promise<string> {
+): AsyncGenerator<string> {
   const history = await buildOllamaMessages(convId);
   const messages: OllamaMessage[] = [
     ...history,
     { role: "user", content: userText },
   ];
-  const final = await mcpChat(messages);
-  return final;
+  yield* mcpChat("mistral-small3.2", messages);
 }
