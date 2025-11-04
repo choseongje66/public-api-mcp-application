@@ -56,5 +56,5 @@ export async function* askMcpWithHistory(
     ...history,
     { role: "user", content: userText },
   ];
-  yield* mcpChat("mistral-small3.2", messages);
+  yield* mcpChat("gpt-oss:20b-cloud", messages);
 }
