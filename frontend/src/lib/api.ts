@@ -78,5 +78,9 @@ export async function sendQuery(convId: number, text: string) {
     body: JSON.stringify({ convId, text }),
   });
   if (!r.ok) throw new Error(`Failed to send query (${r.status})`);
-  return r.json();
+  // 스트리밍이 아니므로, 응답 본문이 필요 없습니다.
+  // 후속 fetchMessages로 데이터를 다시 가져옵니다.
+  // 스트리밍 구현 시 이 함수는 ReadableStream을 반환해야 합니다.
+  if (!r.body) throw new Error("Response body is missing");
+  return r.body.getReader();
 }

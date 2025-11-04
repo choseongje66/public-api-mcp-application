@@ -69,18 +69,47 @@ export default function App() {
   async function onSend(text: string) {
     if (!authed || !activeId || loading) return;
     setLoading(true);
+
+    // 1. 사용자 메시지를 먼저 UI에 추가
+    const userMsg: Msg = { id: Date.now(), role: "user", content: text };
+    // 2. 어시스턴트 메시지 셸(껍데기) 추가
+    const assistantMsg: Msg = {
+      id: Date.now() + 1,
+      role: "assistant",
+      content: "",
+    };
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+
     try {
-      await sendQuery(activeId, text);
-      const [hist, list] = await Promise.all([
-        fetchMessages(activeId),
-        listConversations(),
-      ]);
-      const msgs: Msg[] = Array.isArray(hist) ? hist : hist?.items ?? [];
+      const reader = await sendQuery(activeId, text);
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        // 3. 어시스턴트 메시지 내용 실시간 업데이트
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsg.id ? { ...m, content: m.content + chunk } : m
+          )
+        );
+      }
+
+      // 4. 스트림 종료 후 대화 목록 갱신
+      const list = await listConversations();
       const items: ConvItem[] = Array.isArray(list) ? list : list?.items ?? [];
-      setMessages(msgs);
       setConvs(items);
     } catch (e) {
       console.error(e);
+      // 에러 발생 시 UI에 표시
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMsg.id
+            ? { ...m, content: "오류가 발생했습니다." }
+            : m
+        )
+      );
     } finally {
       setLoading(false);
     }
