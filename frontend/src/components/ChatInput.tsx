@@ -1,44 +1,73 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
-export default function ChatInput({
-  onSend,
-  disabled,
-}: {
-  onSend: (t: string) => void;
+type Props = {
+  onSend: (text: string) => void;
   disabled?: boolean;
-}) {
+};
+
+export default function ChatInput({ onSend, disabled }: Props) {
   const [text, setText] = useState("");
-  function submit() {
-    const v = text.trim();
-    if (!v || disabled) return;
-    onSend(v);
-    setText("");
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  function resizeTextarea(el: HTMLTextAreaElement) {
+    el.style.height = "0px";
+    const next = Math.min(el.scrollHeight, 280);
+    el.style.height = next + "px";
   }
+
+  function submit() {
+    const value = text.trim();
+    if (!value || disabled) return;
+    onSend(value);
+    setText("");
+    if (textareaRef.current) {
+      resizeTextarea(textareaRef.current);
+    }
+  }
+
   return (
     <div
+      className="chat-input"
       style={{
+        width: "100%",
         display: "flex",
+        alignItems: "center",
+        borderRadius: 20,
+        border: "1px solid #e5e7eb",
+        background: "#ffffff",
+        padding: "8px 10px 8px 20px",
+        boxShadow: "0 2px 12px rgba(15, 23, 42, 0.08)",
         gap: 8,
-        borderTop: "1px solid #e5e7eb",
-        paddingTop: 12,
-        background: "#fff",
-        position: "sticky",
-        bottom: 0,
       }}
     >
       <textarea
-        rows={3}
+        ref={textareaRef}
+        className="chat-input-textarea"
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => {
+          setText(e.target.value);
+          if (textareaRef.current) {
+            resizeTextarea(textareaRef.current);
+          }
+        }}
         placeholder="무엇이든 물어보세요… 예) 2025년 10월 29일 대전 날씨 알려줘."
+        rows={1}
         style={{
           flex: 1,
-          resize: "vertical",
-          padding: 12,
-          borderRadius: 8,
-          border: "1px solid #d1d5db",
+          resize: "none",
+          padding: 0,
+          borderRadius: 0,
+          border: "none",
+          outline: "none",
+          background: "transparent",
+          fontSize: 14,
+          lineHeight: 1.5,
+          minHeight: 20,
+          maxHeight: 280,
+          overflowY: "auto",
         }}
         onKeyDown={(e) => {
+          // Enter = 전송, Shift+Enter = 줄바꿈
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             submit();
@@ -46,14 +75,19 @@ export default function ChatInput({
         }}
       />
       <button
+        className="chat-input-send"
         onClick={submit}
-        disabled={disabled}
+        disabled={disabled || !text.trim()}
         style={{
-          padding: "12px 16px",
-          borderRadius: 8,
-          border: "1px solid #3b82f6",
-          background: "#3b82f6",
+          padding: "8px 14px",
+          borderRadius: 999,
+          border: "none",
+          background: disabled || !text.trim() ? "#d1d5db" : "#3b82f6",
           color: "#fff",
+          fontWeight: 600,
+          fontSize: 13,
+          cursor: disabled || !text.trim() ? "default" : "pointer",
+          whiteSpace: "nowrap",
         }}
       >
         보내기

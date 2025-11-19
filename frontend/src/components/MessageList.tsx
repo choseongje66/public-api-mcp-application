@@ -29,33 +29,44 @@ const TypingIndicator = () => (
 
 export default function MessageList({ messages }: { messages: Msg[] }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div
+      className="message-list"
+      style={{ display: "flex", flexDirection: "column", gap: 12 }}
+    >
       {messages.map((m, i) => (
-        <div
-          key={i}
-          style={{
-            alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-            maxWidth: 720,
-          }}
-        >
-          <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
-            {m.role}
-          </div>
+        <div key={i} className={`message-row message-row-${m.role}`} style={{ width: "100%" }}>
           <div
+            className="message-block"
             style={{
-              padding: 12,
-              borderRadius: 8,
-              background: m.role === "user" ? "#DCF2FF" : "#F2F2F2",
-              lineHeight: 1.5,
-              ...(m.role === "user" && { whiteSpace: "pre-wrap" }),
+              maxWidth: 720,
+              margin: "0 auto",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: m.role === "user" ? "flex-end" : "flex-start",
             }}
           >
-            {m.role === "assistant" && !m.content ? (
-              <TypingIndicator />
-            ) : m.role === "assistant" ? (
-              <>
-                <style>
-                  {`
+            <div className="message-role" style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
+              {m.role}
+            </div>
+            <div
+              className={`message-bubble message-bubble-${m.role}`}
+              style={{
+                padding: 12,
+                borderRadius: 8,
+                background: m.role === "user" ? "#DCF2FF" : "#F2F2F2",
+                lineHeight: 1.5,
+                maxWidth: "100%",
+                marginLeft: m.role === "user" ? 56 : undefined,
+                marginRight: m.role === "assistant" ? 56 : undefined,
+                ...(m.role === "user" && { whiteSpace: "pre-wrap" }),
+              }}
+            >
+              {m.role === "assistant" && !m.content ? (
+                <TypingIndicator />
+              ) : m.role === "assistant" ? (
+                <>
+                  <style>
+                    {`
                     .markdown-content table {
                       width: 100%;
                       border-collapse: collapse;
@@ -72,19 +83,20 @@ export default function MessageList({ messages }: { messages: Msg[] }) {
                       font-weight: 600;
                     }
                   `}
-                </style>
-                <div className="markdown-content">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeHighlight]}
-                  >
-                    {m.content}
-                  </ReactMarkdown>
-                </div>
-              </>
-            ) : (
-              m.content
-            )}
+                  </style>
+                  <div className="markdown-content">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
+                  </div>
+                </>
+              ) : (
+                m.content
+              )}
+            </div>
           </div>
         </div>
       ))}

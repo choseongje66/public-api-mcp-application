@@ -1,4 +1,4 @@
-// src/App.tsx
+﻿// src/App.tsx
 import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import MessageList from "./components/MessageList";
@@ -167,7 +167,10 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#fafafa" }}>
+    <div
+      className="app-shell"
+      style={{ display: "flex", height: "100vh", background: "#fafafa" }}
+    >
       <Sidebar
         items={convs.map((c) => ({
           id: String(c.id),
@@ -181,8 +184,12 @@ export default function App() {
         onNew={onNew}
         onDelete={(id) => onDelete(id)}
       />
-      <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <main
+        className="chat-panel"
+        style={{ flex: 1, display: "flex", flexDirection: "column" }}
+      >
         <div
+          className="chat-header"
           style={{
             height: 56,
             borderBottom: "1px solid #e5e7eb",
@@ -196,6 +203,7 @@ export default function App() {
           <div style={{ fontWeight: 600 }}>공공 api mcp</div>
           <button
             onClick={onLogout}
+            className="logout-button"
             style={{
               padding: "6px 10px",
               border: "1px solid #e5e7eb",
@@ -206,20 +214,51 @@ export default function App() {
             로그아웃
           </button>
         </div>
-        <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
-          {messages.length ? (
-            <MessageList messages={messages as any} />
-          ) : (
-            <div
-              style={{ color: "#9ca3af", marginTop: 80, textAlign: "center" }}
-            >
-              왼쪽에서 대화를 선택하거나, 아래 입력창에 질문을 입력해
-              시작하세요.
-            </div>
-          )}
+        <div
+          className="chat-content"
+          style={{ flex: 1, padding: 24, overflowY: "auto" }}
+        >
+          <div
+            className="chat-content-inner"
+            style={{
+              maxWidth: 720,
+              margin: "0 auto",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: messages.length ? "flex-start" : "center",
+            }}
+          >
+            {messages.length ? (
+              <MessageList messages={messages as any} />
+            ) : (
+              <div
+                className="chat-empty"
+                style={{
+                  color: "#9ca3af",
+                  textAlign: "center",
+                  padding: "64px 0",
+                }}
+              >
+                왼쪽에서 대화를 선택하거나, 아래 입력창에 질문을 입력해
+                시작하세요.
+              </div>
+            )}
+          </div>
         </div>
-        <div style={{ padding: "12px 24px", background: "#fff" }}>
-          <ChatInput onSend={onSend} disabled={loading || !activeId} />
+        <div
+          className="chat-footer"
+          style={{
+            padding: "16px 24px 24px",
+            background: "#fafafa",
+            display: "flex",
+            justifyContent: "center",
+            borderTop: "1px solid #e5e7eb",
+          }}
+        >
+          <div style={{ width: "100%", maxWidth: 720 }}>
+            <ChatInput onSend={onSend} disabled={loading || !activeId} />
+          </div>
         </div>
       </main>
     </div>
