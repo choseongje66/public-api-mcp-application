@@ -1,4 +1,7 @@
 import type { Msg } from "../lib/storage";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 
 const TypingIndicator = () => (
   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -43,12 +46,42 @@ export default function MessageList({ messages }: { messages: Msg[] }) {
               padding: 12,
               borderRadius: 8,
               background: m.role === "user" ? "#DCF2FF" : "#F2F2F2",
-              whiteSpace: "pre-wrap",
               lineHeight: 1.5,
+              ...(m.role === "user" && { whiteSpace: "pre-wrap" }),
             }}
           >
             {m.role === "assistant" && !m.content ? (
               <TypingIndicator />
+            ) : m.role === "assistant" ? (
+              <>
+                <style>
+                  {`
+                    .markdown-content table {
+                      width: 100%;
+                      border-collapse: collapse;
+                      margin-top: 1em;
+                      margin-bottom: 1em;
+                    }
+                    .markdown-content th, .markdown-content td {
+                      border: 1px solid #d1d5db;
+                      padding: 8px;
+                      text-align: left;
+                    }
+                    .markdown-content th {
+                      background-color: #f3f4f6;
+                      font-weight: 600;
+                    }
+                  `}
+                </style>
+                <div className="markdown-content">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeHighlight]}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
+                </div>
+              </>
             ) : (
               m.content
             )}
