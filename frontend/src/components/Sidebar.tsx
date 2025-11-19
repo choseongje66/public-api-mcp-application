@@ -28,7 +28,7 @@ export default function Sidebar({
     >
       <div
         className="sidebar-toolbar"
-        style={{ padding: 12, borderBottom: "1px solid #e5e7eb", display: "flex", gap: 8 }}
+        style={{ padding: 12, display: "flex", gap: 8 }}
       >
         <button
           className="sidebar-new-btn"
@@ -57,7 +57,10 @@ export default function Sidebar({
         style={{ overflowY: "auto", padding: 8, flex: 1 }}
       >
         {items.length === 0 && (
-          <div className="sidebar-empty" style={{ color: "#9ca3af", fontSize: 14, padding: 8 }}>
+          <div
+            className="sidebar-empty"
+            style={{ color: "#9ca3af", fontSize: 14, padding: 8 }}
+          >
             아직 대화가 없습니다.
           </div>
         )}
