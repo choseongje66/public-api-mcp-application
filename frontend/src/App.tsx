@@ -186,7 +186,13 @@ export default function App() {
       />
       <main
         className="chat-panel"
-        style={{ flex: 1, display: "flex", flexDirection: "column" }}
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          overflow: "hidden",
+        }}
       >
         <div
           className="chat-header"
@@ -216,14 +222,18 @@ export default function App() {
         </div>
         <div
           className="chat-content"
-          style={{ flex: 1, padding: 24, overflowY: "auto" }}
+          style={{
+            flex: 1,
+            overflowY: "auto",
+          }}
         >
           <div
             className="chat-content-inner"
             style={{
               maxWidth: 720,
               margin: "0 auto",
-              height: "100%",
+              padding: "24px 24px 140px",
+              minHeight: "100%",
               display: "flex",
               flexDirection: "column",
               justifyContent: messages.length ? "flex-start" : "center",
@@ -249,14 +259,19 @@ export default function App() {
         <div
           className="chat-footer"
           style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
             padding: "16px 24px 24px",
-            background: "#fafafa",
+            background:
+              "linear-gradient(to top, #fafafa 70%, rgba(250, 250, 250, 0))",
             display: "flex",
             justifyContent: "center",
-            borderTop: "1px solid #e5e7eb",
+            pointerEvents: "none",
           }}
         >
-          <div style={{ width: "100%", maxWidth: 720 }}>
+          <div style={{ width: "100%", maxWidth: 720, pointerEvents: "auto" }}>
             <ChatInput onSend={onSend} disabled={loading || !activeId} />
           </div>
         </div>
