@@ -104,7 +104,7 @@ export default function AuthForm({ onAuthed }: Props) {
             onChange={(e) => setEmail(e.currentTarget.value)}
             required
             style={{
-              width: "100%",
+              width: "calc(100% - 20px)",
               padding: 10,
               border: "1px solid #e5e7eb",
               borderRadius: 6,
@@ -122,7 +122,7 @@ export default function AuthForm({ onAuthed }: Props) {
             required
             minLength={4}
             style={{
-              width: "100%",
+              width: "calc(100% - 20px)",
               padding: 10,
               border: "1px solid #e5e7eb",
               borderRadius: 6,
